@@ -1,5 +1,6 @@
 package com.leejk.config;
 
+import com.leejk.exceptionhandling.CustomAccessDeniedHandler;
 import com.leejk.exceptionhandling.CustomBasicAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,13 +28,16 @@ public class ProjectSecurityConfig {
 
     @Bean
     SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.requiresChannel(rcc -> rcc.anyRequest().requiresInsecure()) //Only HTTP
+        http.sessionManagement(smc -> smc.invalidSessionUrl("/invalidSession").maximumSessions(3).maxSessionsPreventsLogin(true))
+                .requiresChannel(rcc -> rcc.anyRequest().requiresInsecure()) //Only HTTP
                 .csrf(csrfConfig -> csrfConfig.disable())
-                .authorizeHttpRequests((requests) -> requests
+                .authorizeHttpRequests(requests -> requests
                 .requestMatchers("/myAccount", "/myBalance", "/myLoans", "/myCards", "/user").authenticated()
-                .requestMatchers("/notices", "/contact", "/register").permitAll());
+                .requestMatchers("/notices", "/contact", "/register","/invalidSession", "/favicon.ico", "/error").permitAll());
         http.formLogin(withDefaults());
         http.httpBasic(hbc -> hbc.authenticationEntryPoint(new CustomBasicAuthenticationEntryPoint()));
+//        http.exceptionHandling(ehc -> ehc.authenticationEntryPoint(new CustomBasicAuthenticationEntryPoint()));
+        http.exceptionHandling(ehc -> ehc.accessDeniedHandler(new CustomAccessDeniedHandler()));
         return http.build();
     }
 
